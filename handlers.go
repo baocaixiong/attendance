@@ -60,6 +60,9 @@ func (h *Handler) UploadDo(ctx *Context) {
 		ctx.Redirect("/")
 		return
 	}
+
+	ctx.Request.ParseForm()
+
 	fmt.Println(ctx.Request.Form)
 
 	tmpDate := ctx.Request.Form.Get("date")
