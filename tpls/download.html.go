@@ -1,4 +1,8 @@
-{{define "body"}}
+package tpls
+
+func init() {
+	registerTemplate("download.html", `
+{{template "header.html" .}}
 <!-- Begin page content -->
 <div class="container">
   <div class="page-header">
@@ -12,4 +16,6 @@
     
 </form>
 
-{{end}}
+{{template "footer.html" .}}
+`)
+}

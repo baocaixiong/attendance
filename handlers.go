@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"html/template"
 	"io"
 	"log"
 	"net/http"
@@ -12,14 +13,14 @@ import (
 )
 
 type Handler struct {
-	tpls *Tpls
+	tpls *template.Template
 	log  *log.Logger
 }
 
-func newHandler(tpls *Tpls) *Handler {
+func newHandler(tpls *template.Template) *Handler {
 	handler := new(Handler)
 	handler.tpls = tpls
-	handler.log = log.New(os.Stdout, "", log.LstdFlags)
+	handler.log = logger
 
 	return handler
 }
@@ -29,11 +30,11 @@ func (h *Handler) handle(w http.ResponseWriter, r *http.Request) {
 	h.log.Println(fmt.Sprintf("%s %s", r.Method, r.URL.String()))
 	switch r.URL.String() {
 	case "/":
-		context.IsUpdate = true
+		context.IsUpload = true
 		h.Home(context)
-	case "/update/do":
-		context.IsUpdate = true
-		h.UpdateDo(context)
+	case "/upload/do":
+		context.IsUpload = true
+		h.UploadDo(context)
 	case "/download":
 		context.IsDownload = true
 		h.Download(context)
@@ -47,14 +48,14 @@ func (h *Handler) handle(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) Home(ctx *Context) {
-	ctx.Render("home")
+	ctx.Render("home.html")
 }
 
 func (h *Handler) NotFound(ctx *Context) {
 	ctx.Response.Write([]byte("This page is not found."))
 }
 
-func (h *Handler) UpdateDo(ctx *Context) {
+func (h *Handler) UploadDo(ctx *Context) {
 	if ctx.Method != "POST" {
 		ctx.Redirect("/")
 		ctx.End()
@@ -78,7 +79,7 @@ func (h *Handler) UpdateDo(ctx *Context) {
 	}
 
 	ctx.Request.ParseMultipartForm(32 << 20)
-	file, handler, err := ctx.Request.FormFile("attendanceFile")
+	file, handler, err := ctx.Request.FormFile("uploadFile")
 	if err != nil {
 		fmt.Println(err)
 		fmt.Fprintf(ctx.Response, "%v", "上传错误")
@@ -94,7 +95,8 @@ func (h *Handler) UpdateDo(ctx *Context) {
 	updateDir := filepath.Join(currentDir, "data")
 
 	filename := strconv.FormatInt(time.Now().Unix(), 10) + fileext
-	f, _ := os.OpenFile(updateDir+filename, os.O_CREATE|os.O_WRONLY, 0660)
+
+	f, _ := os.OpenFile(filepath.Join(updateDir, filename), os.O_CREATE|os.O_WRONLY, 0660)
 	_, err = io.Copy(f, file)
 	if err != nil {
 		fmt.Fprintf(ctx.Response, "%v", "上传失败")
@@ -107,7 +109,7 @@ func (h *Handler) UpdateDo(ctx *Context) {
 }
 
 func (h *Handler) Download(ctx *Context) {
-	ctx.Render("download")
+	ctx.Render("download.html")
 }
 
 func (h *Handler) DownloadDo(ctx *Context) {

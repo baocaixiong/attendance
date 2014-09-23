@@ -2,16 +2,17 @@ package main
 
 import (
 	"fmt"
+	"github.com/baocaixiong/attendance/tpls"
 	"net/http"
 	"os"
 )
 
 func main() {
-	tpls := newTpls()
-	handler := newHandler(tpls)
+	tpls.Parse()
+
+	handler := newHandler(tpls.T)
 
 	http.HandleFunc("/", handler.handle)
-	http.HandleFunc("/assets/", Static)
 
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
