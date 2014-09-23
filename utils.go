@@ -18,6 +18,10 @@ const (
 	CONTEXT_RENDERED = "context_rendered"
 	CONTEXT_END      = "context_end"
 	CONTEXT_SEND     = "context_send"
+
+	FLASH_ERROR   = "error"
+	FLASH_SUCCESS = "success"
+	FLASH_WARNING = "warning"
 )
 
 var currentDir = func() string {
