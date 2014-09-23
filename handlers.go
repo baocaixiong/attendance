@@ -72,7 +72,7 @@ func (h *Handler) UploadDo(ctx *Context) {
 		return
 	}
 
-	tmpIsContainHead := ctx.Request.Form.Get(("isContainHead"))
+	tmpIsContainHead := ctx.Request.Form.Get("isContainHead")
 
 	var isContainHead bool
 	if tmpIsContainHead == "on" {
@@ -84,8 +84,7 @@ func (h *Handler) UploadDo(ctx *Context) {
 	ctx.Request.ParseMultipartForm(32 << 20)
 	file, handler, err := ctx.Request.FormFile("uploadfile")
 	if err != nil {
-		fmt.Println(err)
-		ctx.FlushMessage = "上传错误"
+		ctx.FlushMessage = fmt.Sprintf("上传错误: %s", err)
 		return
 	}
 
@@ -98,15 +97,16 @@ func (h *Handler) UploadDo(ctx *Context) {
 	updateDir := filepath.Join(currentDir, "data")
 
 	filename := strconv.FormatInt(time.Now().Unix(), 10) + fileext
+	fullpath := filepath.Join(updateDir, filename)
 
-	f, _ := os.OpenFile(filepath.Join(updateDir, filename), os.O_CREATE|os.O_WRONLY, 0660)
+	f, _ := os.OpenFile(fullpath, os.O_CREATE|os.O_WRONLY, 0660)
 	_, err = io.Copy(f, file)
 	if err != nil {
-		ctx.FlushMessage = "上传失败"
+		ctx.FlushMessage = fmt.Sprintf("上传失败: %s", err)
 		return
 	}
-	filedir, _ := filepath.Abs(updateDir + filename)
-	ctx.FlushMessage = filepath.Join(filename + "上传完成,服务器地址:" + filedir)
+
+	ctx.FlushMessage = filepath.Join(filename + "上传完成,服务器地址:" + fullpath)
 
 	fmt.Println(isContainHead, date, f)
 }
@@ -120,12 +120,12 @@ func (h *Handler) DownloadDo(ctx *Context) {
 }
 
 func check(name string) bool {
-	ext := []string{".exe", ".js", ".png"}
+	ext := []string{".xlsx"}
 
 	for _, v := range ext {
 		if v == name {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
