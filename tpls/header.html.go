@@ -12,7 +12,7 @@ func init() {
 <body>
    <body>
         <div>
-          <a class="navbar-brand" href="/">Project name</a>
+          <a href="/">Project name</a>
         </div>
         <div>
           <ul>
