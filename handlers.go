@@ -58,15 +58,18 @@ func (h *Handler) NotFound(ctx *Context) {
 func (h *Handler) UploadDo(ctx *Context) {
 	if ctx.Method != "POST" {
 		ctx.Redirect("/")
-		ctx.End()
+		return
 	}
+	fmt.Println(ctx.Request.Form)
+
 	tmpDate := ctx.Request.Form.Get("date")
 
 	date, err := time.Parse("2006-01", tmpDate)
 	if err != nil {
-		ctx.Flash("日期格式不正确")
+		ctx.FlushMessage = fmt.Sprintf("日期格式不正确: %s", err)
 		ctx.Status = 400
-		ctx.Render("home")
+		ctx.Render("home.html")
+		return
 	}
 
 	tmpIsContainHead := ctx.Request.Form.Get(("isContainHead"))
@@ -79,16 +82,16 @@ func (h *Handler) UploadDo(ctx *Context) {
 	}
 
 	ctx.Request.ParseMultipartForm(32 << 20)
-	file, handler, err := ctx.Request.FormFile("uploadFile")
+	file, handler, err := ctx.Request.FormFile("uploadfile")
 	if err != nil {
 		fmt.Println(err)
-		fmt.Fprintf(ctx.Response, "%v", "上传错误")
+		ctx.FlushMessage = "上传错误"
 		return
 	}
 
 	fileext := filepath.Ext(handler.Filename)
 	if check(fileext) == false {
-		fmt.Fprintf(ctx.Response, "%v", "不允许的上传类型")
+		ctx.FlushMessage = "不允许的上传类型"
 		return
 	}
 
@@ -99,11 +102,11 @@ func (h *Handler) UploadDo(ctx *Context) {
 	f, _ := os.OpenFile(filepath.Join(updateDir, filename), os.O_CREATE|os.O_WRONLY, 0660)
 	_, err = io.Copy(f, file)
 	if err != nil {
-		fmt.Fprintf(ctx.Response, "%v", "上传失败")
+		ctx.FlushMessage = "上传失败"
 		return
 	}
 	filedir, _ := filepath.Abs(updateDir + filename)
-	fmt.Fprintf(ctx.Response, "%v", filename+"上传完成,服务器地址:"+filedir)
+	ctx.FlushMessage = filepath.Join(filename + "上传完成,服务器地址:" + filedir)
 
 	fmt.Println(isContainHead, date, f)
 }

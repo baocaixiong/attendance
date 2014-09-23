@@ -22,7 +22,7 @@ type Context struct {
 	Body     []byte
 
 	routerParams map[string]string
-	flashData    map[string]interface{}
+	FlushMessage string
 
 	eventFunc map[string][]reflect.Value
 	IsSend    bool
@@ -36,7 +36,6 @@ type Context struct {
 
 func NewContext(res http.ResponseWriter, req *http.Request, tpls *template.Template) *Context {
 	context := new(Context)
-	context.flashData = make(map[string]interface{})
 	context.IsSend = false
 	context.IsEnd = false
 
@@ -50,6 +49,7 @@ func NewContext(res http.ResponseWriter, req *http.Request, tpls *template.Templ
 	context.Status = 200
 	context.Header = make(map[string]string)
 	context.Header["Content-Type"] = "text/html;charset=UTF-8"
+	context.FlushMessage = ""
 
 	context.T = tpls
 
@@ -62,14 +62,6 @@ func NewContext(res http.ResponseWriter, req *http.Request, tpls *template.Templ
 
 func (ctx *Context) Param(key string) string {
 	return ctx.routerParams[key]
-}
-
-func (ctx *Context) Flash(key string, v ...interface{}) interface{} {
-	if len(v) == 0 {
-		return ctx.flashData[key]
-	}
-	ctx.flashData[key] = v[0]
-	return nil
 }
 
 func (ctx *Context) Input() map[string]string {

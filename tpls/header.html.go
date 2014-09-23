@@ -11,20 +11,14 @@ func init() {
 </head>
 <body>
    <body>
-
-    <!-- Fixed navbar -->
-    <nav class="navbar navbar-default navbar-fixed-top" role="navigation">
-      <div class="container">
-        <div class="navbar-header">
+        <div>
           <a class="navbar-brand" href="/">Project name</a>
         </div>
-        <div id="navbar" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav">
+        <div>
+          <ul>
             <li {{if .IsUpload}}class="active" {{end}}><a href="/">上传</a></li>
             <li {{if .IsDownload}}class="active" {{end}}><a href="/download">下载</a></li>
           </ul>
-        </div><!--/.nav-collapse -->
-      </div>
-    </nav>
+        </div> {{template "flush.html" .}}
 `)
 }
