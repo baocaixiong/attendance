@@ -257,32 +257,20 @@ func (a *_attendance) sortedByDepartment() *departments {
 }
 
 func (a *_attendance) writeResult(ds *departments) {
-	var file *xlsx.File
-	var sheet *xlsx.Sheet
-	var row *xlsx.Row
-	var cell *xlsx.Cell
-	var err error
 
-	day := time.Now().Day()
+	// day := time.Now().Day()
 
 	for _, d := range ds.d {
-		file = xlsx.NewFile()
-		sheet = file.AddSheet("Sheet1")
-		for _, r := d.rows {
-
+		file := xlsx.NewFile()
+		sheet := file.AddSheet("Sheet1")
+		fmt.Println(sheet)
+		for _, r := range d.rows {
+			fmt.Println(r)
 		}
-	}
-
-	row = sheet.AddRow()
-	cell = row.AddCell()
-	cell.Value = "I am a cell!"
-	err = file.Save("MyXLSXFile.xlsx")
-	if err != nil {
-		fmt.Printf(err.Error())
 	}
 }
 
-func (a *_attendance) defaultRows(){
+func (a *_attendance) defaultRows() {
 
 }
 

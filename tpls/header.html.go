@@ -5,20 +5,20 @@ func init() {
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
+    <title>xlxs处理工具</title>
     {{template "css.html" .}}
 </head>
 <body>
-   <body>
-        <div>
-          <a href="/">Project name</a>
-        </div>
-        <div>
-          <ul>
-            <li {{if .IsUpload}}class="active" {{end}}><a href="/">上传</a></li>
-            <li {{if .IsDownload}}class="active" {{end}}><a href="/download">下载</a></li>
-          </ul>
-        </div> {{template "flush.html" .}}
+    <div id='box'>
+        <div id='box_heard'>wellcome to here ...</div>
+        <div id='box_body'>
+            <div id='nav'>
+                <a class="btn {{if .IsUpload}}active {{end}}" href="/">上传</a>
+                <a class="btn {{if .IsDownload}}active {{end}}" href="/download">下载</a>
+            </div>
+            <div id='text'>
+               {{if .FlushMessage}} {{.FlushMessage}} {{end}} 
+            </div>
 `)
 }
