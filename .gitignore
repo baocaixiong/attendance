@@ -24,3 +24,5 @@ _testmain.go
 *.prof
 bower_components
 data
+origin
+data

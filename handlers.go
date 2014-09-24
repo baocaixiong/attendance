@@ -3,12 +3,9 @@ package main
 import (
 	"fmt"
 	"html/template"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 )
 
@@ -61,13 +58,11 @@ func (h *Handler) UploadDo(ctx *Context) {
 		return
 	}
 
-	ctx.Request.ParseForm()
-
-	fmt.Println(ctx.Request.Form)
+	ctx.Request.ParseMultipartForm(32 << 20)
 
 	tmpDate := ctx.Request.Form.Get("date")
 
-	date, err := time.Parse("2006-01", tmpDate)
+	date, err := time.Parse("2006-01-02", tmpDate)
 	if err != nil {
 		ctx.FlushMessage = fmt.Sprintf("日期格式不正确: %s", err)
 		ctx.Status = 400
@@ -84,34 +79,32 @@ func (h *Handler) UploadDo(ctx *Context) {
 		isContainHead = false
 	}
 
-	ctx.Request.ParseMultipartForm(32 << 20)
 	file, handler, err := ctx.Request.FormFile("uploadfile")
 	if err != nil {
 		ctx.FlushMessage = fmt.Sprintf("上传错误: %s", err)
+		ctx.Status = 400
+		ctx.Render("home.html")
 		return
 	}
 
-	fileext := filepath.Ext(handler.Filename)
-	if check(fileext) == false {
-		ctx.FlushMessage = "不允许的上传类型"
-		return
-	}
+	uploadDir := filepath.Join(currentDir)
 
-	updateDir := filepath.Join(currentDir, "data")
-
-	filename := strconv.FormatInt(time.Now().Unix(), 10) + fileext
-	fullpath := filepath.Join(updateDir, filename)
-
-	f, _ := os.OpenFile(fullpath, os.O_CREATE|os.O_WRONLY, 0660)
-	_, err = io.Copy(f, file)
+	x, err := newXlsx(uploadDir, file, handler, date, isContainHead)
 	if err != nil {
-		ctx.FlushMessage = fmt.Sprintf("上传失败: %s", err)
+		ctx.FlushMessage = fmt.Sprintf("上传错误: %s", err)
+		ctx.Status = 400
+		ctx.Render("home.html")
+		return
+	}
+	if err = x.save(); err != nil {
+		ctx.FlushMessage = fmt.Sprintf("保存文件错误: %s", err)
+		ctx.Status = 400
+		ctx.Render("home.html")
 		return
 	}
 
-	ctx.FlushMessage = filepath.Join(filename + "上传完成,服务器地址:" + fullpath)
-
-	fmt.Println(isContainHead, date, f)
+	ctx.FlushMessage = filepath.Join("上传完成")
+	ctx.Render("home.html")
 }
 
 func (h *Handler) Download(ctx *Context) {
@@ -120,15 +113,4 @@ func (h *Handler) Download(ctx *Context) {
 
 func (h *Handler) DownloadDo(ctx *Context) {
 
-}
-
-func check(name string) bool {
-	ext := []string{".xlsx"}
-
-	for _, v := range ext {
-		if v == name {
-			return true
-		}
-	}
-	return false
 }
