@@ -87,9 +87,7 @@ func (h *Handler) UploadDo(ctx *Context) {
 		return
 	}
 
-	uploadDir := filepath.Join(currentDir)
-
-	x, err := newXlsx(uploadDir, file, handler, date, isContainHead)
+	x, err := newXlsx(currentDir, file, handler, date, isContainHead)
 	if err != nil {
 		ctx.FlushMessage = fmt.Sprintf("上传错误: %s", err)
 		ctx.Status = 400
@@ -112,5 +110,21 @@ func (h *Handler) Download(ctx *Context) {
 }
 
 func (h *Handler) DownloadDo(ctx *Context) {
+	if ctx.Method != "POST" {
+		ctx.Redirect("/download")
+		return
+	}
 
+	tmpDate := ctx.Request.Form.Get("date")
+
+	date, err := time.Parse("2006-01", tmpDate)
+
+	if err != nil {
+		ctx.FlushMessage = fmt.Sprintf("日期格式不正确: %s", err)
+		ctx.Status = 400
+		ctx.Render("download.html")
+		return
+	}
+	a := newAttendance(filepath.Join(currentDir, "data"), date)
+	a.getXlsx()
 }

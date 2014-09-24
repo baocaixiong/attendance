@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -10,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -120,6 +122,9 @@ func (x *_xlsx) saveAsJsonFile() error {
 				End:        row.Cells[3].String(),
 			}
 
+			day, _ := strconv.Atoi(filepath.Base(x.fileName))
+			r.Day = day
+
 			if row.Cells[4].String() != "" {
 				r.End = row.Cells[4].String()
 			}
@@ -157,6 +162,7 @@ type _row struct {
 	Department string `json:"department"`
 	Begin      string `json:"begin"`
 	End        string `json:"end"`
+	Day        int    `json:"day"`
 }
 
 type _rows struct {
@@ -165,4 +171,153 @@ type _rows struct {
 
 func (rs *_rows) addRow(r *_row) {
 	rs.Rows = append(rs.Rows, r)
+}
+
+type _attendance struct {
+	parentDir string
+	date      time.Time
+	fileList  map[string]*_rows
+}
+
+func newAttendance(parentDir string, date time.Time) *_attendance {
+	a := new(_attendance)
+	a.date = date
+	a.parentDir = parentDir
+	a.fileList = make(map[string]*_rows)
+	return a
+}
+
+func (a *_attendance) getXlsx() {
+	a.parseAttendanceContent()
+
+	ds := a.sortedByDepartment()
+
+	a.writeResult(ds)
+
+	fmt.Println(a.fileList)
+}
+
+func (a *_attendance) parseAttendanceContent() {
+	filepath.Walk(a.getJsonPath(), func(path string, info os.FileInfo, err error) error {
+		if info.IsDir() || !strings.HasSuffix(path, ".json") {
+			return nil
+		}
+
+		fmt.Println(path)
+
+		f, fpOpenErr := os.Open(path)
+		if fpOpenErr != nil {
+			logger.Fatalln("Can not open file %v", fpOpenErr)
+			return fpOpenErr
+		}
+
+		defer f.Close()
+
+		bReader := bufio.NewReader(f)
+		out := []byte{}
+		for {
+			buffer := make([]byte, 1024)
+			readCount, readErr := bReader.Read(buffer)
+			if readErr == io.EOF {
+				break
+			} else {
+				out = append(out, buffer[:readCount]...)
+			}
+		}
+
+		rs := new(_rows)
+
+		json.Unmarshal(out, rs)
+		a.fileList[strings.Split(filepath.Base(path), ".")[0]] = rs
+
+		return err
+	})
+}
+
+func (a *_attendance) sortedByDepartment() *departments {
+	ds := new(departments)
+	ds.d = make(map[string]*department)
+
+	for _, rs := range a.fileList {
+		for _, r := range rs.Rows {
+			var d *department
+			if !ds.has(r.Department) {
+				d = new(department)
+				d.rows = make(map[string]*_row)
+				d.name = r.Department
+				ds.add(d)
+			} else {
+				d = ds.get(r.Department)
+			}
+			d.add(r)
+		}
+	}
+
+	return ds
+}
+
+func (a *_attendance) writeResult(ds *departments) {
+	var file *xlsx.File
+	var sheet *xlsx.Sheet
+	var row *xlsx.Row
+	var cell *xlsx.Cell
+	var err error
+
+	day := time.Now().Day()
+
+	for _, d := range ds.d {
+		file = xlsx.NewFile()
+		sheet = file.AddSheet("Sheet1")
+		for _, r := d.rows {
+
+		}
+	}
+
+	row = sheet.AddRow()
+	cell = row.AddCell()
+	cell.Value = "I am a cell!"
+	err = file.Save("MyXLSXFile.xlsx")
+	if err != nil {
+		fmt.Printf(err.Error())
+	}
+}
+
+func (a *_attendance) defaultRows(){
+
+}
+
+func (a *_attendance) getJsonPath() string {
+	return filepath.Join(a.parentDir, strconv.Itoa(a.date.Year()),
+		strconv.Itoa(int(a.date.Month())))
+}
+
+type department struct {
+	rows map[string]*_row
+	name string
+}
+
+func (d *department) has(name string) bool {
+	_, ok := d.rows[name]
+	return ok
+}
+
+func (d *department) add(r *_row) {
+	d.rows[r.Name] = r
+}
+
+type departments struct {
+	d map[string]*department
+}
+
+func (ds *departments) has(name string) bool {
+	_, ok := ds.d[name]
+	return ok
+}
+
+func (ds *departments) get(name string) *department {
+	return ds.d[name]
+}
+
+func (ds *departments) add(d *department) {
+	ds.d[d.name] = d
 }
