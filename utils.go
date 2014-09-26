@@ -4,16 +4,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-)
-
-const (
-	CONTEXT_RENDERED = "context_rendered"
-	CONTEXT_END      = "context_end"
-	CONTEXT_SEND     = "context_send"
-
-	FLASH_ERROR   = "error"
-	FLASH_SUCCESS = "success"
-	FLASH_WARNING = "warning"
+	"time"
 )
 
 var currentDir = func() string {
@@ -25,3 +16,17 @@ var currentDir = func() string {
 }()
 
 var logger = log.New(os.Stdout, "", log.LstdFlags)
+
+func getMonthDays(date time.Time) int {
+	t := time.Date(date.Year(), date.Month(), 32, 0, 0, 0, 0, time.UTC)
+	return 32 - t.Day()
+}
+
+func makeTmpDir() string {
+	tmpDir := filepath.Join(currentDir, "tmp")
+	if _, err := os.Stat(tmpDir); os.IsNotExist(err) {
+		os.MkdirAll(tmpDir, 0777)
+	}
+
+	return tmpDir
+}

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"archive/zip"
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -187,23 +189,34 @@ func newAttendance(parentDir string, date time.Time) *_attendance {
 	return a
 }
 
-func (a *_attendance) getXlsx() {
-	a.parseAttendanceContent()
+func (a *_attendance) getXlsx() (string, error) {
+	err := a.parseAttendanceContent()
+	if err != nil {
+		return "", err
+	}
 
 	ds := a.sortedByDepartment()
 
-	a.writeResult(ds)
+	zipFile, err := a.writeResult(ds)
 
-	fmt.Println(a.fileList)
+	if err != nil {
+		return "", err
+	}
+
+	return zipFile, nil
 }
 
-func (a *_attendance) parseAttendanceContent() {
+func (a *_attendance) parseAttendanceContent() error {
+
+	jsonPath := a.getJsonPath()
+	if _, err := os.Stat(jsonPath); os.IsNotExist(err) {
+		return errors.New(fmt.Sprintf("从未上传该月份文件或者目录错误: %s", err))
+	}
+
 	filepath.Walk(a.getJsonPath(), func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() || !strings.HasSuffix(path, ".json") {
+		if err != nil || info.IsDir() || !strings.HasSuffix(path, ".json") {
 			return nil
 		}
-
-		fmt.Println(path)
 
 		f, fpOpenErr := os.Open(path)
 		if fpOpenErr != nil {
@@ -232,6 +245,8 @@ func (a *_attendance) parseAttendanceContent() {
 
 		return err
 	})
+
+	return nil
 }
 
 func (a *_attendance) sortedByDepartment() *departments {
@@ -256,18 +271,64 @@ func (a *_attendance) sortedByDepartment() *departments {
 	return ds
 }
 
-func (a *_attendance) writeResult(ds *departments) {
-
-	// day := time.Now().Day()
+func (a *_attendance) writeResult(ds *departments) (string, error) {
+	files := make(map[string]map[string]string)
 
 	for _, d := range ds.d {
 		file := xlsx.NewFile()
-		sheet := file.AddSheet("Sheet1")
-		fmt.Println(sheet)
-		for _, r := range d.rows {
-			fmt.Println(r)
+		fileName := d.name + "-" + strconv.Itoa(int(a.date.Month())) + "月.xlsx"
+		sheet := file.AddSheet(fileName) // add sheet
+		newAttendanceSheet(a.date, sheet)
+		parts, err := file.MarshallParts()
+		if err != nil {
+			return "", err
+		}
+		files[fileName] = parts
+	}
+
+	resultPath := filepath.Join(makeTmpDir(), time.Now().Local().Format("2006年01月02号150405")+".zip")
+
+	target, err := os.Create(resultPath)
+
+	if err != nil {
+		return "", errors.New(fmt.Sprintf("创建考勤文件出错, %s", err))
+	}
+
+	w := zip.NewWriter(target)
+
+	for name, parts := range files {
+		f, err := w.Create(name)
+		if err != nil {
+			return "", err
+		}
+
+		b := new(bytes.Buffer)
+		zw := zip.NewWriter(b)
+		for partName, part := range parts {
+			var writer io.Writer
+			writer, err = zw.Create(partName)
+			if err != nil {
+				return "", err
+			}
+			_, err = writer.Write([]byte(part))
+			if err != nil {
+				return "", err
+			}
+		}
+		zw.Close()
+
+		_, err = f.Write(b.Bytes())
+		if err != nil {
+			return "", err
 		}
 	}
+
+	err = w.Close()
+	if err != nil {
+		return "", err
+	}
+
+	return resultPath, nil
 }
 
 func (a *_attendance) defaultRows() {

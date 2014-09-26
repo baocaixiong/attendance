@@ -4,7 +4,7 @@ func init() {
 	registerTemplate("download.html", `
 {{template "header.html" .}}
 <div id='form'>
-    <form action="/download/do" method="POST" enctype="multipart/form-data">
+    <form action="/download/do" method="POST">
     <table>
         <tr>
             <label>

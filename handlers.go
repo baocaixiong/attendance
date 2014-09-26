@@ -126,5 +126,12 @@ func (h *Handler) DownloadDo(ctx *Context) {
 		return
 	}
 	a := newAttendance(filepath.Join(currentDir, "data"), date)
-	a.getXlsx()
+	file, err := a.getXlsx()
+	if err != nil {
+		ctx.FlushMessage = fmt.Sprintf("处理文件出错: %s", err)
+		ctx.Status = 400
+		ctx.Render("download.html")
+	}
+
+	ctx.Download(file)
 }
