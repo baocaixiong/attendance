@@ -278,7 +278,7 @@ func (a *_attendance) writeResult(ds *departments) (string, error) {
 		file := xlsx.NewFile()
 		fileName := d.name + "-" + strconv.Itoa(int(a.date.Month())) + "月.xlsx"
 		sheet := file.AddSheet(fileName) // add sheet
-		newAttendanceSheet(a.date, sheet)
+		newAttendanceSheet(a.date, sheet, d)
 		parts, err := file.MarshallParts()
 		if err != nil {
 			return "", err
